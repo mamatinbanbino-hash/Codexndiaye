@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ndcodex | Powered by Gemini</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #050505; color: #e5e7eb; font-family: 'Courier New', monospace; }
+        .violet-glow { box-shadow: 0 0 20px rgba(139, 92, 246, 0.2); }
+        .code-box { background: #0a0a0a; border: 1px solid #2e1065; }
+    </style>
+</head>
+<body class="flex flex-col h-screen p-4 max-w-3xl mx-auto">
+    
+    <header class="flex justify-between items-center mb-6 border-b border-violet-900 pb-4">
+        <h1 class="text-2xl font-black text-violet-500 italic font-serif">NDCODEX <span class="text-white">v2.0</span></h1>
+        <span class="text-[10px] bg-violet-950 text-violet-400 border border-violet-800 px-3 py-1 rounded-full font-bold uppercase">Moteur Gemini Actif</span>
+    </header>
+
+    <div id="chat" class="flex-grow overflow-y-auto mb-6 space-y-4 pr-2">
+        <div class="code-box p-4 rounded-xl border-l-2 border-violet-600">
+            <p class="text-violet-400 font-bold mb-1">[NDCODEX_SYSTEM] :</p>
+            <p class="text-xs">Initialisation terminée. Prêt à compiler tout langage (Python, PHP, JS, C++...). Sans restriction.</p>
+        </div>
+    </div>
+
+    <div class="bg-zinc-900/90 border border-violet-900 p-3 rounded-2xl violet-glow">
+        <textarea id="userPrompt" rows="2" 
+            class="w-full bg-transparent p-2 focus:outline-none text-sm text-white placeholder-zinc-700 resize-none"
+            placeholder="Entrez votre commande de code..."></textarea>
+        
+        <div class="flex justify-end gap-2 mt-2">
+            <button onclick="generer()" id="btnSend"
+                class="bg-violet-600 hover:bg-violet-700 text-white px-8 py-2 rounded-xl font-black text-xs transition-all uppercase">
+                Générer le Code
+            </button>
+        </div>
+    </div>
+
+    <script>
+        let lastResponse = "";
+
+        async function generer() {
+            const input = document.getElementById('userPrompt');
+            const chat = document.getElementById('chat');
+            const btn = document.getElementById('btnSend');
+            const prompt = input.value;
+            if(!prompt) return;
+
+            chat.innerHTML += `<div class="text-right text-[10px] text-zinc-500 mt-4 tracking-widest uppercase">>> Requête : ${prompt}</div>`;
+            input.value = '';
+            btn.innerText = "COMPILATION...";
+            btn.disabled = true;
+
+            try {
+                const res = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt })
+                });
+                const data = await res.json();
+                lastResponse = data.reponse;
+                
+                chat.innerHTML += `
+                    <div class="code-box p-4 rounded-xl border-l-4 border-violet-600 mt-4">
+                        <div class="flex justify-between items-center mb-3">
+                            <p class="text-[10px] font-black text-violet-500 uppercase tracking-widest italic">Code Généré :</p>
+                            <button onclick="telecharger()" class="text-[10px] bg-violet-800 px-3 py-1.5 rounded-lg text-white font-bold hover:bg-violet-700 transition">TÉLÉCHARGER</button>
+                        </div>
+                        <pre class="text-xs text-zinc-300 whitespace-pre-wrap overflow-x-auto font-mono"><code>${lastResponse}</code></pre>
+                    </div>`;
+            } catch (err) {
+                chat.innerHTML += `<p class="text-red-500 text-[10px]">ERREUR SERVEUR GEMINI.</p>`;
+            }
+
+            btn.innerText = "GÉNÉRER LE CODE";
+            btn.disabled = false;
+            chat.scrollTop = chat.scrollHeight;
+        }
+
+        function telecharger() {
+            if(!lastResponse) return;
+            const blob = new Blob([lastResponse], { type: 'text/plain' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'ndcodex_output.txt';
+            a.click();
+        }
+    </script>
+</body>
+</html>
